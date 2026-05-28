@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.cache/
+.mypy_cache/
+.env
+data/*.duckdb
+data/*.parquet
+.streamlit/
+*.log
+.DS_Store
+node_modules/
+dist/
+build/
