@@ -12,7 +12,13 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
-RUN pip install -e ".[anthropic,embed]"
+# No [embed] extra: sentence-transformers pulls in torch (+ a full CUDA toolkit
+# it never uses here), which OOMs on Render's free 512MB instance the first
+# time a session loads an embedder. EMBEDDER=hash (set in render.yaml) never
+# touches that code path; get_embedder()'s "auto" mode also falls back to the
+# hash embedder if sentence-transformers isn't installed, so this is safe
+# even if EMBEDDER is ever unset.
+RUN pip install -e ".[anthropic]"
 
 COPY . .
 

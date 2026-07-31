@@ -11,3 +11,5 @@ services:
         value: anthropic
       - key: ANTHROPIC_MODEL
         value: claude-sonnet-4-6
+      - key: EMBEDDER
+        value: hash

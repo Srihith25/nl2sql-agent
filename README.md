@@ -171,12 +171,17 @@ The backend ships as a single Docker image (`Dockerfile`) that seeds the TPC-H d
 **Backend (Render):**
 1. Push this repo to GitHub.
 2. In the Render dashboard: **New → Blueprint**, point it at your repo — it reads `render.yaml` automatically.
-3. Set the `ANTHROPIC_API_KEY` secret when prompted (the blueprint already sets `LLM_PROVIDER=anthropic`).
+3. Set the `ANTHROPIC_API_KEY` secret when prompted (the blueprint already sets `LLM_PROVIDER=anthropic` and `EMBEDDER=hash`).
 4. Deploy. Note the resulting service URL (e.g. `https://nl2sql-api.onrender.com`).
+5. Sanity check: `curl https://<your-service>.onrender.com/health` → `{"ok":true}`.
+
+> **Why `EMBEDDER=hash` in production:** `sentence-transformers` pulls in `torch` (and a full unused CUDA toolkit), which OOM-crashes Render's free 512MB instance the first time a session loads an embedder. The hash embedder is deterministic but not semantic, so schema retrieval quality is lower than local dev. If retrieval quality matters more than staying on the free tier, install the `[embed]` extra and move to a plan with more RAM.
+>
+> **Free tier also means cold starts.** The instance spins down after ~15 minutes idle; the next request can take 30–60s to wake it, and may need a retry. This is expected, not a bug.
 
 **Frontend (Vercel):**
-1. In the Vercel dashboard: **Add New → Project**, import the same repo, set **Root Directory** to `frontend`.
-2. Add an environment variable `NEXT_PUBLIC_API_URL` = your Render backend URL from above.
+1. **Add New → Project**, import the same repo. Expand the project config **before** deploying and set **Root Directory** to `frontend`. Setting this after the first deploy sometimes doesn't fully override framework detection — if you hit a `No FastAPI entrypoint found` error, delete the project and re-import with Root Directory set up front, and double-check **Settings → General → Framework Preset** reads "Next.js".
+2. Add an environment variable `NEXT_PUBLIC_API_URL` = your Render backend URL from above. This is inlined at **build time** (it's a `NEXT_PUBLIC_*` var) — if you add or change it after the first build, you must redeploy for it to take effect.
 3. Deploy.
 
 The backend's CORS is currently open (`allow_origins=["*"]`) so it will accept requests from any frontend origin without extra config. See [`CLAUDE.md`](./CLAUDE.md#deployment) for more detail.
