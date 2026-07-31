@@ -127,10 +127,13 @@ make generate-evals DB_URL=postgresql://user:pw@host/db OUT=eval/my_questions.js
 make test                       # full suite, pytest -q, no API keys needed
 pytest tests/test_graph.py -q   # LangGraph state machine + self-heal loop
 pytest tests/test_api.py -q     # HTTP-level /connect + /ask, including dual-SQL verify
-pytest -k test_validate -q      # by name pattern
+pytest tests/test_db_adapter.py -q  # the live validate_sql/execute_sql path
+pytest -k parse_error -q        # by name pattern (matches across files)
 ```
 
 `tests/test_api.py` proves the "Verify" feature actually executes an independent second LLM call server-side (not just a frontend badge) — see [`CLAUDE.md`](./CLAUDE.md) for how to check this against a live server too.
+
+Note there are two SQL validators in this codebase: `app/db_adapter.py` (used by the live graph, covered by `tests/test_db_adapter.py`) and a separate, unused-in-production `app/validator.py` (covered by `tests/test_validator.py`). A real bug shipped once because a fix landed in the wrong one — if you're touching SQL validation/error-handling, check both.
 
 ## Configuration
 

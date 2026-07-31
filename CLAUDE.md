@@ -26,7 +26,8 @@ make dev           # API + Next.js together
 make test                       # pytest -q (no API keys needed)
 pytest tests/test_graph.py -q   # LangGraph state machine + self-heal loop
 pytest tests/test_api.py -q     # HTTP-level /connect + /ask, incl. dual-SQL verify
-pytest -k test_validate -q      # by name pattern
+pytest tests/test_db_adapter.py -q  # the live validate_sql/execute_sql path (not app/validator.py)
+pytest -k parse_error -q        # by name pattern (matches across files)
 ```
 
 ### Eval & data
@@ -65,6 +66,8 @@ All SQL execution and validation route through this module. It accepts **SQLAlch
 - `mysql+pymysql://user:pw@host/db` — MySQL
 
 The `validate_sql` function runs `sqlglot` parse + DuckDB `EXPLAIN` and enforces a write-guard (`_DISALLOWED` set). `execute_sql` caps results at 10,000 rows.
+
+**Important:** `sqlglot.parse_one()` can fail two different ways — `ParseError` for malformed-but-tokenizable SQL, or `TokenError` for things like an unterminated string literal, which fails during tokenizing before parsing even starts. `validate_sql` must catch both, or a `TokenError` escapes uncaught through the graph and into `api.py`'s generic exception handler as a raw 500 (this shipped as a real bug once — see `tests/test_db_adapter.py::test_unterminated_quote_is_a_graceful_error`, a regression test that reproduces it). Note there is a second, separate `validate_sql` in `app/validator.py` — that one is **not used in production** (only by its own `tests/test_validator.py`); the live path is always `db_adapter.validate_sql`. Keep both in sync on error handling if you touch one, since it's easy to fix the wrong file.
 
 ### Session management (`app/session.py`)
 
