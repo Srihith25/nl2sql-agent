@@ -7,13 +7,16 @@ import ResultCard from "@/components/ResultCard";
 import Sidebar from "@/components/Sidebar";
 import ConnectModal from "@/components/ConnectModal";
 import ThemeToggle from "@/components/ThemeToggle";
+import WelcomeScreen from "@/components/WelcomeScreen";
 import { Database, ShieldCheck, ShieldOff, Search } from "lucide-react";
 
 let idCounter = 0;
 
+type Stage = "welcome" | "connect" | "app";
+
 export default function Home() {
+  const [stage, setStage] = useState<Stage>("welcome");
   const [session, setSession] = useState<ActiveSession | null>(null);
-  const [showConnect, setShowConnect] = useState(true);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -21,13 +24,13 @@ export default function Home() {
 
   const handleConnect = useCallback((s: ActiveSession) => {
     setSession(s);
-    setShowConnect(false);
+    setStage("app");
     setHistory([]);
   }, []);
 
   const handleDemo = useCallback(() => {
     setSession(null);
-    setShowConnect(false);
+    setStage("app");
     setHistory([]);
   }, []);
 
@@ -49,9 +52,13 @@ export default function Home() {
     }
   }, [session]);
 
+  if (stage === "welcome") {
+    return <WelcomeScreen onGetStarted={() => setStage("connect")} onTryDemo={handleDemo} />;
+  }
+
   return (
     <div className="flex flex-col h-full min-h-screen bg-page">
-      {showConnect && (
+      {stage === "connect" && (
         <ConnectModal onConnect={handleConnect} onDemo={handleDemo} />
       )}
 
@@ -101,7 +108,7 @@ export default function Home() {
             {verifyMode ? "Verify on" : "Verify off"}
           </button>
           <button
-            onClick={() => setShowConnect(true)}
+            onClick={() => setStage("connect")}
             className="btn-ghost text-xs"
           >
             {session ? "Switch DB" : "Connect DB"}
