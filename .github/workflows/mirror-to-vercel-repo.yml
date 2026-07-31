@@ -1,0 +1,26 @@
+name: Mirror main to Vercel-linked repo
+
+# Vercel's project for the frontend is connected to a separate repo
+# (Srihith25/nl2sql) rather than this one, because Vercel auto-created it
+# during an earlier import instead of using this repo directly. Until that's
+# reconnected, this keeps it in sync: every push to main here is mirrored
+# there so Vercel picks up new commits automatically.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to mirror repo
+        run: |
+          git remote add mirror "https://x-access-token:${MIRROR_REPO_TOKEN}@github.com/Srihith25/nl2sql.git"
+          git push mirror "HEAD:main" --force
+        env:
+          MIRROR_REPO_TOKEN: ${{ secrets.MIRROR_REPO_TOKEN }}
