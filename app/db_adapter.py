@@ -222,7 +222,7 @@ def validate_sql(sql: str, db_url: str) -> Optional[str]:
 
     try:
         parsed = sqlglot.parse_one(sql, read="duckdb")
-    except sqlglot.errors.ParseError as e:
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError) as e:
         return f"parse error: {e}"
 
     import re
