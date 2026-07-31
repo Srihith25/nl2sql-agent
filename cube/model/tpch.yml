@@ -1,0 +1,61 @@
+# Optional Cube semantic layer over TPC-H.
+# Enable by setting CUBE_URL=http://localhost:4000 in .env after
+#   docker compose up -d postgres cube
+# and loading the TPC-H data into Postgres.
+cubes:
+  - name: revenue
+    sql: >
+      SELECT l.*, o.o_orderdate, o.o_custkey, c.c_nationkey, n.n_regionkey
+      FROM lineitem l
+      JOIN orders   o ON l.l_orderkey = o.o_orderkey
+      JOIN customer c ON o.o_custkey  = c.c_custkey
+      JOIN nation   n ON c.c_nationkey = n.n_nationkey
+
+    joins:
+      - name: region
+        sql: "{CUBE}.n_regionkey = {region}.r_regionkey"
+        relationship: many_to_one
+
+    measures:
+      - name: gross_revenue
+        sql: "{CUBE}.l_extendedprice * (1 - {CUBE}.l_discount)"
+        type: sum
+        format: currency
+        description: Sum of extendedprice * (1 - discount). The canonical TPC-H revenue measure.
+
+      - name: order_count
+        sql: l_orderkey
+        type: count_distinct
+
+    dimensions:
+      - name: ship_mode
+        sql: l_shipmode
+        type: string
+
+      - name: order_date
+        sql: o_orderdate
+        type: time
+
+  - name: region
+    sql_table: region
+    measures:
+      - name: count
+        type: count
+    dimensions:
+      - name: name
+        sql: r_name
+        type: string
+      - name: id
+        sql: r_regionkey
+        type: number
+        primary_key: true
+
+views:
+  - name: revenue_by_region
+    description: Net revenue with a region-level rollup.
+    cubes:
+      - join_path: revenue
+        includes: [gross_revenue, order_count, order_date]
+      - join_path: revenue.region
+        prefix: true
+        includes: [name]
