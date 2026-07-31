@@ -4,6 +4,22 @@ A self-healing Natural-Language to SQL agent with schema-aware RAG, query valida
 
 > Walks an English question through schema retrieval → SQL generation → parse + `EXPLAIN` validation → execute → chart suggestion → plain-English explanation, with up to three self-healing retries when the SQL fails, and an optional second independent LLM call to cross-check the answer.
 
+## Screenshots & demo
+
+[![Watch the demo](frontend/public/media/screenshots/1-welcome.png)](frontend/public/media/demo.mp4)
+*Click the image above for a ~4-minute walkthrough (`frontend/public/media/demo.mp4`, self-hosted in this repo).*
+
+<video src="frontend/public/media/demo.mp4" controls width="100%"></video>
+
+| | |
+|---|---|
+| ![Connect a database](frontend/public/media/screenshots/2-connect-database.png) | ![Query result with chart](frontend/public/media/screenshots/3-result-light.png) |
+| Connect Postgres/MySQL/SQLite/DuckDB, or upload a file | Question → validated SQL → results, chart, and a plain-English analysis |
+| ![Dark mode](frontend/public/media/screenshots/4-result-dark.png) | ![Generated SQL view](frontend/public/media/screenshots/5-sql-view.png) |
+| Dark mode | The exact generated SQL is always one click away |
+
+This same gallery (plus the video) is also viewable inside the running app itself — click the ▶ icon in the header, or "Watch a quick demo" on the welcome screen.
+
 ## What you get
 
 - **Connect any database** — Postgres, MySQL, SQLite, DuckDB via connection string, or upload a CSV / Parquet / SQLite / DuckDB file directly. Each connection becomes an isolated session with its own schema-aware vector index.
@@ -208,6 +224,9 @@ The backend's CORS is currently open (`allow_origins=["*"]`) so it will accept r
 | `app/api.py`                 | FastAPI app: `/connect`, `/upload`, `/ask`, `/execute`, `/sessions`, `/health` |
 | `app/streamlit_app.py`      | Lightweight alternative UI                                       |
 | `frontend/`                  | Next.js 14 + Tailwind + Recharts frontend                        |
+| `frontend/components/WelcomeScreen.tsx` | First-load onboarding: what the app does + a 4-step walkthrough + CTAs |
+| `frontend/components/DemoGallery.tsx`   | Dismissible screenshots + demo video modal, opened from the welcome screen or the header |
+| `frontend/public/media/`     | Self-hosted screenshots + demo video (served by Next.js, also linked from this README) |
 | `data/seed_tpch.py`         | Generates the TPC-H demo DuckDB                                  |
 | `scripts/build_index.py`    | Builds the demo schema vector index                               |
 | `scripts/generate_evals.py` | Auto-generates an eval set from any connected database            |

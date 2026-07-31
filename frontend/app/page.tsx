@@ -8,7 +8,8 @@ import Sidebar from "@/components/Sidebar";
 import ConnectModal from "@/components/ConnectModal";
 import ThemeToggle from "@/components/ThemeToggle";
 import WelcomeScreen from "@/components/WelcomeScreen";
-import { Database, ShieldCheck, ShieldOff, Search } from "lucide-react";
+import DemoGallery from "@/components/DemoGallery";
+import { Database, ShieldCheck, ShieldOff, Search, PlayCircle } from "lucide-react";
 
 let idCounter = 0;
 
@@ -21,6 +22,7 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [verifyMode, setVerifyMode] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
 
   const handleConnect = useCallback((s: ActiveSession) => {
     setSession(s);
@@ -61,6 +63,7 @@ export default function Home() {
       {stage === "connect" && (
         <ConnectModal onConnect={handleConnect} onDemo={handleDemo} />
       )}
+      {showGallery && <DemoGallery onClose={() => setShowGallery(false)} />}
 
       {/* Header */}
       <header className="glass-header sticky top-0 z-30 px-5 py-3 flex items-center justify-between gap-4">
@@ -94,6 +97,16 @@ export default function Home() {
 
         <div className="flex items-center gap-2 shrink-0">
           <ThemeToggle />
+          <button
+            onClick={() => setShowGallery(true)}
+            title="Screenshots & demo video"
+            className="w-8 h-7 rounded-lg flex items-center justify-center transition-colors"
+            style={{ color: "var(--fg-muted)", border: "1px solid var(--border)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <PlayCircle size={14} strokeWidth={2} />
+          </button>
           <button
             onClick={() => setVerifyMode((v) => !v)}
             title="Run a second independent SQL to verify every answer"

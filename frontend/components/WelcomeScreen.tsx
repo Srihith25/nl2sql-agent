@@ -1,5 +1,7 @@
 "use client";
+import { useState } from "react";
 import { Database, MessageSquareText, Table2, ShieldCheck, ArrowRight, PlayCircle } from "lucide-react";
+import DemoGallery from "./DemoGallery";
 
 interface Props {
   onGetStarted: () => void;
@@ -30,6 +32,8 @@ const STEPS = [
 ];
 
 export default function WelcomeScreen({ onGetStarted, onTryDemo }: Props) {
+  const [showGallery, setShowGallery] = useState(false);
+
   return (
     <div className="flex flex-col h-full min-h-screen bg-page">
       <div className="flex-1 flex items-center justify-center px-4 py-12">
@@ -87,8 +91,22 @@ export default function WelcomeScreen({ onGetStarted, onTryDemo }: Props) {
               Try the demo first
             </button>
           </div>
+
+          <p className="text-center mt-6">
+            <button
+              onClick={() => setShowGallery(true)}
+              className="text-xs transition-colors"
+              style={{ color: "var(--fg-muted)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
+            >
+              Not sure yet? Watch a quick demo →
+            </button>
+          </p>
         </div>
       </div>
+
+      {showGallery && <DemoGallery onClose={() => setShowGallery(false)} />}
     </div>
   );
 }

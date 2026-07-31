@@ -90,7 +90,7 @@ FastAPI app (`api`) exposes:
 
 ### Frontend (`frontend/`)
 
-Next.js 14 + Tailwind + Recharts. Single-page app at `frontend/app/page.tsx`. Calls the FastAPI backend via `frontend/lib/api.ts`. The `ConnectModal` handles DB connection/upload on first load; `ResultCard` renders SQL + table + chart + follow-up questions.
+Next.js 14 + Tailwind + Recharts. Single-page app at `frontend/app/page.tsx`. Calls the FastAPI backend via `frontend/lib/api.ts`. `page.tsx` tracks a `Stage` (`"welcome" | "connect" | "app"`) rather than a single boolean gate: `WelcomeScreen` is shown first (a 4-step explanation + "Connect your database" / "Try the demo first" CTAs), then `ConnectModal` handles DB connection/upload, then the main app. `ResultCard` renders SQL + table + chart + follow-up questions. `DemoGallery` is a dismissible modal (screenshots + a self-hosted `<video>`, assets in `frontend/public/media/`) reachable from both `WelcomeScreen` and a header button — it's the one modal in the app with a close (X) button, since unlike `ConnectModal` it's optional, not a gate.
 
 **Design system** — all colors are CSS custom properties defined once in `frontend/app/globals.css` (Slate neutrals + a copper/amber `--accent`, plus semantic `--success` / `--warning` / `--danger` tokens for both themes). Never hardcode a color (`rgba(...)`, hex) in a component — reference the existing `var(--...)` token, or add a new token to `globals.css` if none fits. Icons are `lucide-react`, not emoji — the UI was deliberately migrated off emoji glyphs (☀️🌙✓⚠️ etc.) because they read as unpolished; keep new UI additions consistent with that.
 
