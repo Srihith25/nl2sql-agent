@@ -38,7 +38,7 @@ def validate_sql(sql: str, db_path: str | None = None) -> str | None:
     # 1. Parse with sqlglot — catches malformed SQL early.
     try:
         parsed = sqlglot.parse_one(sql, read="duckdb")
-    except sqlglot.errors.ParseError as e:
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError) as e:
         return f"parse error: {e}"
 
     # 2. Write-statement guard. We allow only SELECT / WITH / SHOW / DESCRIBE / EXPLAIN.

@@ -31,6 +31,10 @@ test:
 eval:
 	$(PYTHON) eval/run_evals.py eval/tpch_25.jsonl
 
+# Generate eval questions from any DB:  make generate-evals DB_URL=postgresql://... OUT=eval/my.jsonl
+generate-evals:
+	$(PYTHON) scripts/generate_evals.py --db-url "$(DB_URL)" --output "$(OUT)"
+
 clean:
 	rm -rf .pytest_cache .cache __pycache__ */__pycache__ */*/__pycache__
 	rm -f data/warehouse.duckdb data/vectors.duckdb

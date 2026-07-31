@@ -15,3 +15,7 @@ data/*.parquet
 node_modules/
 dist/
 build/
+frontend/.next/
+frontend/out/
+*.tsbuildinfo
+.vercel/

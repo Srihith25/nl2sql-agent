@@ -46,8 +46,8 @@ def test_self_healing(db_path: str, vector_db_path: str):
     llm = MockLLM(responses=[
         # First gen_sql -> bad. The HEAL prompt does NOT contain "single"; gen_sql does.
         (lambda s, u: "single DuckDB SQL" in s, bad),
-        # heal -> good. HEAL system contains "Rewrite the SQL".
-        (lambda s, u: "Rewrite the SQL" in s, good),
+        # heal -> good. HEAL user message always contains "CORRECTED SQL:".
+        (lambda s, u: "CORRECTED SQL:" in u, good),
     ])
     agent = build_graph(
         llm=llm,

@@ -13,39 +13,83 @@ const EXAMPLES = [
 interface Props {
   history: HistoryEntry[];
   onSelect: (q: string) => void;
+  tables?: string[];
 }
 
-export default function Sidebar({ history, onSelect }: Props) {
+function SidebarSection({ title }: { title: string }) {
   return (
-    <aside className="w-64 shrink-0 flex flex-col gap-6">
+    <h2
+      className="text-xs font-semibold uppercase tracking-wider mb-2.5"
+      style={{ color: "var(--fg-muted)" }}
+    >
+      {title}
+    </h2>
+  );
+}
+
+function SidebarButton({
+  label,
+  mono,
+  onClick,
+}: {
+  label: string;
+  mono?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left text-xs px-3 py-2 rounded-lg transition-all truncate"
+      style={{ color: "var(--fg-2)", background: "transparent" }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background = "var(--accent-bg)";
+        (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+        (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-2)";
+      }}
+    >
+      <span className={mono ? "font-code" : ""}>{label}</span>
+    </button>
+  );
+}
+
+export default function Sidebar({ history, onSelect, tables }: Props) {
+  const showTables = tables && tables.length > 0;
+
+  return (
+    <aside className="w-60 shrink-0 flex flex-col gap-6">
+      {/* Tables or examples */}
       <div>
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Examples</h2>
-        <ul className="space-y-1">
-          {EXAMPLES.map((ex) => (
-            <li key={ex}>
-              <button
-                onClick={() => onSelect(ex)}
-                className="w-full text-left text-xs text-slate-400 hover:text-slate-200 hover:bg-[#1a1d27] px-3 py-2 rounded-lg transition-colors"
-              >
-                {ex}
-              </button>
-            </li>
-          ))}
+        <SidebarSection title={showTables ? "Tables" : "Examples"} />
+        <ul className="space-y-0.5">
+          {showTables
+            ? tables.map((t) => (
+                <li key={t}>
+                  <SidebarButton
+                    label={t}
+                    mono
+                    onClick={() => onSelect(`Show me a sample of the ${t} table`)}
+                  />
+                </li>
+              ))
+            : EXAMPLES.map((ex) => (
+                <li key={ex}>
+                  <SidebarButton label={ex} onClick={() => onSelect(ex)} />
+                </li>
+              ))}
         </ul>
       </div>
 
+      {/* Recent history */}
       {history.length > 0 && (
         <div>
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Recent</h2>
-          <ul className="space-y-1">
+          <SidebarSection title="Recent" />
+          <ul className="space-y-0.5">
             {history.slice(0, 8).map((h) => (
               <li key={h.id}>
-                <button
-                  onClick={() => onSelect(h.question)}
-                  className="w-full text-left text-xs text-slate-400 hover:text-slate-200 hover:bg-[#1a1d27] px-3 py-2 rounded-lg transition-colors truncate"
-                >
-                  {h.question}
-                </button>
+                <SidebarButton label={h.question} onClick={() => onSelect(h.question)} />
               </li>
             ))}
           </ul>

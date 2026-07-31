@@ -25,7 +25,8 @@ from langgraph.graph import END, StateGraph
 from .chart import suggest_chart
 from .config import settings
 from .cube_meta import fetch_cube_meta
-from .executor import run_cube, run_sql
+from .db_adapter import execute_sql as adapter_execute, validate_sql as adapter_validate
+from .executor import run_cube
 from .llm import LLM, get_llm
 from .prompts import (
     CLASSIFY_SYSTEM,
@@ -38,7 +39,6 @@ from .prompts import (
     heal_user,
 )
 from .retriever import Retriever
-from .validator import validate_sql
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +47,7 @@ log = logging.getLogger(__name__)
 
 class AgentState(TypedDict, total=False):
     question: str
+    db_url: str                      # set by API layer from the active session
     schema_context: str
     examples: list[tuple[str, str]]
     cube_meta: str
@@ -58,6 +59,8 @@ class AgentState(TypedDict, total=False):
     attempts: int
     chart_suggestion: dict
     error: Optional[str]
+    explanation: str
+    follow_up_questions: list[str]
 
 
 # ---------- Helpers ----------
@@ -126,13 +129,18 @@ def build_graph(
         )
         return {"sql": clean_sql(out)}
 
+    def _effective_url(state: AgentState) -> str:
+        # state["db_url"] is already a full URL (duckdb:/// or postgres:// etc.)
+        # db is a plain file path — wrap it so adapter functions can parse it uniformly.
+        return state.get("db_url") or f"duckdb:///{db}"
+
     def n_validate(state: AgentState) -> AgentState:
-        err = validate_sql(state.get("sql", ""), db_path=db)
+        err = adapter_validate(state.get("sql", ""), _effective_url(state))
         return {"validation_error": err}
 
     def n_execute_sql(state: AgentState) -> AgentState:
         try:
-            rows = run_sql(state["sql"], db_path=db)
+            rows = adapter_execute(state["sql"], _effective_url(state))
             return {"rows": rows, "error": None}
         except Exception as e:  # noqa: BLE001
             log.exception("execute_sql failed")
@@ -149,7 +157,12 @@ def build_graph(
     def n_heal(state: AgentState) -> AgentState:
         new_sql = llm.complete(
             HEAL_SYSTEM,
-            heal_user(state["question"], state.get("sql", ""), state.get("validation_error") or ""),
+            heal_user(
+                state["question"],
+                state.get("sql", ""),
+                state.get("validation_error") or "",
+                state.get("schema_context", ""),
+            ),
         )
         return {
             "sql": clean_sql(new_sql),
@@ -158,6 +171,35 @@ def build_graph(
 
     def n_chart(state: AgentState) -> AgentState:
         return {"chart_suggestion": suggest_chart(state.get("rows", []))}
+
+    _EXPLAIN_SYSTEM = (
+        "You are a concise data analyst. Given a question and its SQL result, respond with "
+        "valid JSON only — no prose, no markdown fences — in this exact shape:\n"
+        '{"explanation": "<1-2 sentence plain-English insight>", '
+        '"follow_up_questions": ["<q1>", "<q2>", "<q3>"]}\n'
+        "The follow-up questions must be natural continuations a non-technical user would actually ask next."
+    )
+
+    def n_explain(state: AgentState) -> AgentState:
+        rows = state.get("rows", [])
+        if not rows or state.get("error"):
+            return {"explanation": "", "follow_up_questions": []}
+        sample = rows[:6]
+        user_msg = (
+            f'Question: "{state.get("question", "")}"\n'
+            f"SQL: {state.get('sql', '')}\n"
+            f"Returned {len(rows)} row(s). Sample data: {json.dumps(sample, default=str)}"
+        )
+        try:
+            raw = llm.complete(_EXPLAIN_SYSTEM, user_msg)
+            parsed = _safe_json(raw) or {}
+            return {
+                "explanation": parsed.get("explanation", ""),
+                "follow_up_questions": parsed.get("follow_up_questions", [])[:4],
+            }
+        except Exception:  # noqa: BLE001
+            log.warning("n_explain failed — skipping", exc_info=True)
+            return {"explanation": "", "follow_up_questions": []}
 
     g = StateGraph(AgentState)
     for name, fn in [
@@ -170,6 +212,7 @@ def build_graph(
         ("execute_cube", n_execute_cube),
         ("heal", n_heal),
         ("chart", n_chart),
+        ("explain", n_explain),
     ]:
         g.add_node(name, fn)
 
@@ -194,7 +237,8 @@ def build_graph(
     g.add_edge("heal", "validate")
     g.add_edge("execute_sql", "chart")
     g.add_edge("execute_cube", "chart")
-    g.add_edge("chart", END)
+    g.add_edge("chart", "explain")
+    g.add_edge("explain", END)
     return g
 
 

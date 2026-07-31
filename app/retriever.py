@@ -94,19 +94,26 @@ def build_index(
     vector_db_path: str | None = None,
     examples_path: str | Path | None = None,
     embedder: Embedder | None = None,
+    _chunks_override: list | None = None,
 ) -> int:
-    """Build (or rebuild) the schema-chunks index. Returns the chunk count."""
-    db_path = db_path or settings.db_path
+    """Build (or rebuild) the schema-chunks index. Returns the chunk count.
+
+    Pass `_chunks_override` to supply pre-built chunks (e.g. from db_adapter)
+    and skip the db_path introspection entirely.
+    """
     vector_db_path = vector_db_path or settings.vector_db_path
     embedder = embedder or get_embedder()
 
-    if not Path(db_path).exists():
-        raise FileNotFoundError(f"Data warehouse not found at {db_path}. Run data/seed_tpch.py first.")
-
-    with closing(duckdb.connect(db_path, read_only=True)) as data_con:
-        chunks = enumerate_chunks(data_con)
-    if examples_path:
-        chunks.extend(load_examples(examples_path))
+    if _chunks_override is not None:
+        chunks = _chunks_override
+    else:
+        db_path = db_path or settings.db_path
+        if not Path(db_path).exists():
+            raise FileNotFoundError(f"Data warehouse not found at {db_path}. Run data/seed_tpch.py first.")
+        with closing(duckdb.connect(db_path, read_only=True)) as data_con:
+            chunks = enumerate_chunks(data_con)
+        if examples_path:
+            chunks.extend(load_examples(examples_path))
 
     bodies = [c.body for c in chunks]
     embeds = embedder.encode(bodies)

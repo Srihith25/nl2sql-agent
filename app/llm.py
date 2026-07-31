@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class LLM(Protocol):
-    def complete(self, system: str, user: str) -> str: ...
+    def complete(self, system: str, user: str, max_tokens: int = 1024) -> str: ...
 
 
 # ---------- Groq ----------
@@ -40,10 +40,11 @@ class GroqLLM:
         self.client = Groq(api_key=settings.groq_api_key)
         self.model = model or settings.groq_model
 
-    def complete(self, system: str, user: str) -> str:
+    def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         r = self.client.chat.completions.create(
             model=self.model,
             temperature=0,
+            max_tokens=max_tokens,
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -67,10 +68,10 @@ class ClaudeLLM:
         self.client = Anthropic(api_key=settings.anthropic_api_key)
         self.model = model or settings.anthropic_model
 
-    def complete(self, system: str, user: str) -> str:
+    def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         r = self.client.messages.create(
             model=self.model,
-            max_tokens=1024,
+            max_tokens=max_tokens,
             system=system,
             messages=[{"role": "user", "content": user}],
         )
@@ -96,7 +97,7 @@ class MockLLM:
     fallback: str = ""
     calls: list[tuple[str, str]] = field(default_factory=list)
 
-    def complete(self, system: str, user: str) -> str:
+    def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         self.calls.append((system, user))
         for predicate, response in self.responses:
             if predicate(system, user):

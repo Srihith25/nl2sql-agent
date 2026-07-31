@@ -1,4 +1,5 @@
 "use client";
+import { useTheme } from "next-themes";
 import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -11,42 +12,70 @@ interface Props {
 }
 
 export default function ResultChart({ rows, suggestion }: Props) {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
+
+  const colors = {
+    bar:     dark ? "#f0b429" : "#b45309",
+    grid:    dark ? "#262f3d" : "#e2e8f0",
+    tick:    dark ? "#576274" : "#94a3b8",
+    tooltip: dark ? "#0d1117" : "#ffffff",
+    border:  dark ? "#262f3d" : "#e2e8f0",
+    text:    dark ? "#f1f5f9" : "#0f172a",
+  };
+
   const { type, x, y } = suggestion;
-  if (!type || type === "none" || !x || !y) return null;
-  if (rows.length < 2) return null;
+  if (!type || type === "none" || !x || !y || rows.length < 2) return null;
 
-  const data = rows.map((r) => ({ ...r }));
-  const color = "#6366f1";
+  const commonAxis = {
+    tick: { fill: colors.tick, fontSize: 11 },
+    tickLine: false,
+    axisLine: { stroke: colors.grid },
+  };
 
-  if (type === "bar") {
+  const tooltipStyle = {
+    contentStyle: {
+      background: colors.tooltip,
+      border: `1px solid ${colors.border}`,
+      borderRadius: 10,
+      fontSize: 12,
+      color: colors.text,
+      boxShadow: dark ? "0 8px 32px rgba(0,0,0,0.4)" : "0 4px 12px rgba(0,0,0,0.08)",
+    },
+    labelStyle: { fontWeight: 600 },
+    cursor: { fill: dark ? "rgba(240,180,41,0.06)" : "rgba(180,83,9,0.06)" },
+  };
+
+  if (type === "line") {
     return (
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={data} margin={{ top: 4, right: 16, bottom: 4, left: 16 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3a" />
-          <XAxis dataKey={x} tick={{ fill: "#94a3b8", fontSize: 11 }} />
-          <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
-          <Tooltip
-            contentStyle={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRadius: 8 }}
-            labelStyle={{ color: "#e2e8f0" }}
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={rows} margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
+          <XAxis dataKey={x} {...commonAxis} />
+          <YAxis {...commonAxis} width={48} />
+          <Tooltip {...tooltipStyle} />
+          <Line
+            type="monotone"
+            dataKey={y}
+            stroke={colors.bar}
+            strokeWidth={2.5}
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0, fill: colors.bar }}
           />
-          <Bar dataKey={y} fill={color} radius={[4, 4, 0, 0]} />
-        </BarChart>
+        </LineChart>
       </ResponsiveContainer>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={data} margin={{ top: 4, right: 16, bottom: 4, left: 16 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3a" />
-        <XAxis dataKey={x} tick={{ fill: "#94a3b8", fontSize: 11 }} />
-        <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
-        <Tooltip
-          contentStyle={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRadius: 8 }}
-          labelStyle={{ color: "#e2e8f0" }}
-        />
-        <Line type="monotone" dataKey={y} stroke={color} strokeWidth={2} dot={false} />
-      </LineChart>
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={rows} margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
+        <XAxis dataKey={x} {...commonAxis} />
+        <YAxis {...commonAxis} width={48} />
+        <Tooltip {...tooltipStyle} />
+        <Bar dataKey={y} fill={colors.bar} radius={[5, 5, 0, 0]} maxBarSize={40} />
+      </BarChart>
     </ResponsiveContainer>
   );
 }

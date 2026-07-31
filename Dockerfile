@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -11,13 +11,13 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
-RUN pip install -e ".[groq,embed]"
+RUN pip install -e ".[anthropic,embed]"
 
 COPY . .
 
-EXPOSE 8000 8501
+# Seed data and build the vector index at image build time
+RUN python data/seed_tpch.py && python scripts/build_index.py
 
-# Default command: API + UI in the same container.
-CMD ["bash", "-lc", \
-     "uvicorn app.api:api --host 0.0.0.0 --port 8000 & \
-      streamlit run app/streamlit_app.py --server.port 8501 --server.address 0.0.0.0"]
+EXPOSE 8000
+
+CMD ["uvicorn", "app.api:api", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

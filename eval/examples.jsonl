@@ -14,3 +14,5 @@
 {"question": "Total quantity shipped per region", "sql": "SELECT r.r_name AS region, SUM(l.l_quantity) AS qty FROM lineitem l JOIN supplier s ON l.l_suppkey = s.s_suppkey JOIN nation n ON s.s_nationkey = n.n_nationkey JOIN region r ON n.n_regionkey = r.r_regionkey GROUP BY r.r_name ORDER BY qty DESC"}
 {"question": "Average part retail price by manufacturer", "sql": "SELECT p_mfgr, AVG(p_retailprice) AS avg_price FROM part GROUP BY p_mfgr ORDER BY avg_price DESC"}
 {"question": "Yearly revenue from 1992 to 1995", "sql": "SELECT EXTRACT(YEAR FROM o.o_orderdate)::INTEGER AS year, SUM(l.l_extendedprice * (1 - l.l_discount)) AS revenue FROM lineitem l JOIN orders o ON l.l_orderkey = o.o_orderkey WHERE EXTRACT(YEAR FROM o.o_orderdate) BETWEEN 1992 AND 1995 GROUP BY year ORDER BY year"}
+{"question": "List all orders placed in 1994", "sql": "SELECT * FROM orders WHERE o_orderdate LIKE '1994%'"}
+{"question": "Which is the highest revenue line item for each order?", "sql": "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY l_orderkey ORDER BY l_extendedprice DESC) AS rn FROM lineitem) t WHERE rn = 1"}
